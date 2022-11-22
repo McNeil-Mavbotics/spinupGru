@@ -1,3 +1,15 @@
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// Robot Configuration:
+// [Name]               [Type]        [Port(s)]
+// Controller1          controller                    
+// intake               motor         1               
+// frontLeft            motor         2               
+// frontRight           motor         3               
+// backLeft             motor         4               
+// backRight            motor         5               
+// indexer              motor         6               
+// flyWheel             motor         7               
+// ---- END VEXCODE CONFIGURED DEVICES ----
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /*    Module:       main.cpp                                                  */
@@ -12,21 +24,23 @@
 // [Name]               [Type]        [Port(s)]
 // Controller1          controller                    
 // intake               motor         1               
-// frontLeft            motor         4               
-// frontRight           motor         5               
-// backLeft             motor         6               
-// backRight            motor         7               
-// indexer              motor         8               
-// flyWheels            motor_group   2, 3            
+// frontLeft            motor         2               
+// frontRight           motor         3               
+// backLeft             motor         4               
+// backRight            motor         5               
+// indexer              motor         6               
+// flyWheel             motor         7               
 // ---- END VEXCODE CONFIGURED DEVICES ----
 
 #include "vex.h"
-#include "pid-controller.cpp"
+#include "pid.h"
 
 using namespace vex;
 
 // A global instance of competition
 competition Competition;
+bool started = false;
+PIDController flyWheelController = PIDController();
 
 // define your global instances of motors and other devices here
 
@@ -43,9 +57,14 @@ competition Competition;
 void pre_auton(void) {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
-
   // All activities that occur before the competition starts
   // Example: clearing encoders, setting servo positions, ...
+  indexer.spinFor(130, degrees, true);
+  frontLeft.setStopping(hold);
+  frontRight.setStopping(hold);
+  backLeft.setStopping(hold);
+  backRight.setStopping(hold);
+  flyWheel.setStopping(coast);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -74,13 +93,34 @@ void autonomous(void) {
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
 
+void shoot() {
+  flyWheelController.changeTarget(150);
+  flyWheel.spin(forward);
+  vex::task::sleep(2000);
+  started = true;
+  vex::task::sleep(10000);
+  started = false;
+  flyWheel.stop();
+}
+
+void switchSides() {
+  vex::motor temp = frontLeft;
+  frontLeft = frontRight;
+  frontRight = temp;
+  temp = backLeft;
+  backLeft = backRight;
+  backRight = temp;
+}
+
 void usercontrol(void) {
   // User control code here, inside the loop
   double driveSpeedMultiplier = 1;
-  frontLeft.setStopping(coast);
-  frontRight.setStopping(coast);
-  backLeft.setStopping(coast);
-  backRight.setStopping(coast);
+  Controller1.ButtonA.pressed(shoot);
+  Controller1.ButtonB.pressed(switchSides);
+  flyWheelController.setUp(4, 1, 800);
+  double flyWheelVelocity = 0;
+  double max = 0;
+  double min = 150;
 
   while (1) {
     // This is the main execution loop for the user control program.
@@ -104,49 +144,27 @@ void usercontrol(void) {
     } else {
       intake.stop();
     }
-    wait(20, msec); // Sleep the task for a short amount of time to
-                    // prevent wasted resources.
-  }
-}
-
-void shoot() {
-  intake.setStopping(coast);
-  flyWheels.setStopping(coast);
-  intake.setVelocity(100, percent);
-  flyWheels.setVelocity(100, percent);
-  flyWheels.stop();
-  flyWheels.spinFor(15, turns, false);
-  indexer.spinFor(350, degrees, true);
-  vex::task::sleep(1000);
-  indexer.spinFor(10, degrees);
-}
-
-void switchSides() {
-  vex::motor temp = frontLeft;
-  frontLeft = frontRight;
-  frontRight = temp;
-  temp = backLeft;
-  backLeft = backRight;
-  backRight = temp;
-}
-
-void userControlSplitArcade()
-{
-  // User control code here, inside the loop
-  double driveSpeedMultiplier = 1;
-  frontLeft.setStopping(coast);
-  frontRight.setStopping(coast);
-  backLeft.setStopping(coast);
-  backRight.setStopping(coast);
-
-  while (true)
-  {
-    double LDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() + Controller1.Axis1.value());
-    double RDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() - Controller1.Axis1.value());
-    frontLeft.spin(forward, LDriveSpeed, vex::velocityUnits::pct);
-    backLeft.spin(forward, LDriveSpeed, vex::velocityUnits::pct);
-    frontRight.spin(forward, RDriveSpeed, vex::velocityUnits::pct);
-    backRight.spin(forward, RDriveSpeed, vex::velocityUnits::pct);
+    flyWheelController.changeValues(flyWheel.velocity(rpm));
+    flyWheelController.changeValues(flyWheel.velocity(rpm));
+    double velocityOut = flyWheelController.computePID(flyWheel.velocity(rpm)) * 0.02;
+    flyWheelVelocity += velocityOut;
+    if (flyWheelVelocity > 150) {
+      flyWheelVelocity = 150;
+    }
+    flyWheel.setVelocity(flyWheelVelocity, rpm);
+    vex::brain::lcd screen = vex::brain::lcd();
+    if (flyWheel.velocity(rpm) > max && started) {
+      max = flyWheel.velocity(rpm);
+    } else if (flyWheel.velocity(rpm) < min && started) {
+      min = flyWheel.velocity(rpm);
+    }
+    screen.print(flyWheel.velocity(rpm));
+    screen.print("\n");
+    screen.print(max);
+    screen.print("\n");
+    screen.print(min);
+    screen.print("\n");
+    screen.print(flyWheelVelocity);
     wait(20, msec); // Sleep the task for a short amount of time to
                     // prevent wasted resources.
   }
@@ -159,13 +177,10 @@ int main() {
   // Set up calbackLefts for autonomous and driver control periods.
   Competition.autonomous(autonomous);
   Competition.drivercontrol(usercontrol);
-  Controller1.ButtonA.pressed(shoot);
-  Controller1.ButtonB.pressed(switchSides);
 
   // Run the pre-autonomous function.
   pre_auton();
 
-  userControlSplitArcade();
   // Prevent main from exiting with an infinite loop.
   while (true) {
     wait(100, msec);

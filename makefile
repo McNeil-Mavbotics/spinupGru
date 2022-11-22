@@ -14,6 +14,8 @@ SRC_C += $(wildcard src/*/*.c)
 
 OBJ = $(addprefix $(BUILD)/, $(addsuffix .o, $(basename $(SRC_C))) )
 
+hack := $(shell touch include/pid.h)
+
 # location of include files that c and cpp files depend on
 SRC_H  = $(wildcard include/*.h)
 
