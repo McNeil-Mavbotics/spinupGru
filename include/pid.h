@@ -4,7 +4,7 @@ class PIDController {
     double ki;
     double kd;
     
-    double elapsedTime = 0.02;
+    double elapsedTime = 20;
     double error;
     double lastError;
     double setPoint = 0;

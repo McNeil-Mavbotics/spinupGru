@@ -1,15 +1,3 @@
-// ---- START VEXCODE CONFIGURED DEVICES ----
-// Robot Configuration:
-// [Name]               [Type]        [Port(s)]
-// Controller1          controller                    
-// intake               motor         1               
-// frontLeft            motor         2               
-// frontRight           motor         3               
-// backLeft             motor         4               
-// backRight            motor         5               
-// indexer              motor         6               
-// flyWheel             motor         7               
-// ---- END VEXCODE CONFIGURED DEVICES ----
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /*    Module:       main.cpp                                                  */
@@ -23,13 +11,13 @@
 // Robot Configuration:
 // [Name]               [Type]        [Port(s)]
 // Controller1          controller                    
-// intake               motor         1               
-// frontLeft            motor         2               
-// frontRight           motor         3               
-// backLeft             motor         4               
+// intake               motor         20              
+// frontLeft            motor         12              
+// frontRight           motor         19              
+// backLeft             motor         11              
 // backRight            motor         5               
 // indexer              motor         6               
-// flyWheel             motor         7               
+// flyWheels            motor_group   16, 17          
 // ---- END VEXCODE CONFIGURED DEVICES ----
 
 #include "vex.h"
@@ -39,9 +27,9 @@ using namespace vex;
 
 // A global instance of competition
 competition Competition;
-bool started = false;
+// bool started = false;
 PIDController flyWheelController = PIDController();
-
+int switched = 1;
 // define your global instances of motors and other devices here
 
 /*---------------------------------------------------------------------------*/
@@ -59,12 +47,13 @@ void pre_auton(void) {
   vexcodeInit();
   // All activities that occur before the competition starts
   // Example: clearing encoders, setting servo positions, ...
+  indexer.setVelocity(100, percent);
   indexer.spinFor(130, degrees, true);
   frontLeft.setStopping(hold);
   frontRight.setStopping(hold);
   backLeft.setStopping(hold);
   backRight.setStopping(hold);
-  flyWheel.setStopping(coast);
+  flyWheels.setStopping(coast);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -94,22 +83,35 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void shoot() {
-  flyWheelController.changeTarget(150);
-  flyWheel.spin(forward);
-  vex::task::sleep(2000);
-  started = true;
-  vex::task::sleep(10000);
-  started = false;
-  flyWheel.stop();
+  flyWheelController.changeTarget(130);
+  flyWheels.spin(forward);
+  // vex::task::sleep(4000);
+  // started = true;
+  for (int i = 0; i < 3; i ++) {
+    // started = false;
+    for (int j = 0; j < 5 && flyWheels.velocity(rpm) <= 120; j++) {
+      vex::task::sleep(1000);
+    }
+    indexer.spinFor(forward, 200, degrees);
+    vex::task::sleep(200);
+    indexer.spinFor(forward, 160, degrees);
+    // started = true;
+    // int seconds = 0;
+    // while (true) {
+    //   seconds += 1;
+    //   vex::task::sleep(100);
+    //   if (flyWheels.velocity(rpm) >= 120 || seconds >= 50) {
+    //     break;
+    //   }
+    // }
+  }
+  // started = false;
+  flyWheels.stop();
+  flyWheelController.changeTarget(0);
 }
 
 void switchSides() {
-  vex::motor temp = frontLeft;
-  frontLeft = frontRight;
-  frontRight = temp;
-  temp = backLeft;
-  backLeft = backRight;
-  backRight = temp;
+  switched *= -1;
 }
 
 void usercontrol(void) {
@@ -117,10 +119,10 @@ void usercontrol(void) {
   double driveSpeedMultiplier = 1;
   Controller1.ButtonA.pressed(shoot);
   Controller1.ButtonB.pressed(switchSides);
-  flyWheelController.setUp(4, 1, 800);
+  flyWheelController.setUp(1.3, 0, 200);
   double flyWheelVelocity = 0;
-  double max = 0;
-  double min = 150;
+  // double max = 0;
+  // double min = 150;
 
   while (1) {
     // This is the main execution loop for the user control program.
@@ -131,12 +133,12 @@ void usercontrol(void) {
     // Insert user code here. This is where you use the joystick values to
     // update your motors, etc.
     // ........................................................................
-    double LDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() + Controller1.Axis1.value());
-    double RDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() - Controller1.Axis1.value());
-    frontLeft.spin(forward, (frontLeft.velocity(percent) + LDriveSpeed) / 2, vex::velocityUnits::pct);
-    backLeft.spin(forward, (backLeft.velocity(percent) + LDriveSpeed) / 2, vex::velocityUnits::pct);
-    frontRight.spin(forward, (frontRight.velocity(percent) + RDriveSpeed) / 2, vex::velocityUnits::pct);
-    backRight.spin(forward, (backRight.velocity(percent) + RDriveSpeed) / 2, vex::velocityUnits::pct);
+    double LDriveSpeed = driveSpeedMultiplier * (Controller1.Axis2.value() + Controller1.Axis4.value()) * switched;
+    double RDriveSpeed = driveSpeedMultiplier * (Controller1.Axis2.value() - Controller1.Axis4.value()) * switched;
+    frontLeft.spin(forward, LDriveSpeed / 2, vex::velocityUnits::pct);
+    backLeft.spin(forward, LDriveSpeed / 2, vex::velocityUnits::pct);
+    frontRight.spin(forward, RDriveSpeed / 2, vex::velocityUnits::pct);
+    backRight.spin(forward, RDriveSpeed / 2, vex::velocityUnits::pct);
     if (Controller1.ButtonR1.pressing()) {
       intake.spin(forward);
     } else if (Controller1.ButtonL1.pressing()) {
@@ -144,27 +146,27 @@ void usercontrol(void) {
     } else {
       intake.stop();
     }
-    flyWheelController.changeValues(flyWheel.velocity(rpm));
-    flyWheelController.changeValues(flyWheel.velocity(rpm));
-    double velocityOut = flyWheelController.computePID(flyWheel.velocity(rpm)) * 0.02;
+    flyWheelController.changeValues(flyWheels.velocity(rpm));
+    flyWheelController.changeValues(flyWheels.velocity(rpm));
+    double velocityOut = flyWheelController.computePID(flyWheels.velocity(rpm)) * 0.02;
     flyWheelVelocity += velocityOut;
-    if (flyWheelVelocity > 150) {
-      flyWheelVelocity = 150;
+    if (flyWheelVelocity > 200) {
+      flyWheelVelocity = 200;
     }
-    flyWheel.setVelocity(flyWheelVelocity, rpm);
+    flyWheels.setVelocity(flyWheelVelocity, rpm);
     vex::brain::lcd screen = vex::brain::lcd();
-    if (flyWheel.velocity(rpm) > max && started) {
-      max = flyWheel.velocity(rpm);
-    } else if (flyWheel.velocity(rpm) < min && started) {
-      min = flyWheel.velocity(rpm);
-    }
-    screen.print(flyWheel.velocity(rpm));
-    screen.print("\n");
-    screen.print(max);
-    screen.print("\n");
-    screen.print(min);
-    screen.print("\n");
-    screen.print(flyWheelVelocity);
+    // if (flyWheels.velocity(rpm) > max && started) {
+    //   max = flyWheels.velocity(rpm);
+    // } else if (flyWheels.velocity(rpm) < min && started) {
+    //   min = flyWheels.velocity(rpm);
+    // }
+    // screen.print(flyWheels.velocity(rpm));
+    // screen.print("\n");
+    // screen.print(max);
+    // screen.print("\n");
+    // screen.print(min);
+    // screen.print("\n");
+    // screen.print(flyWheelVelocity);
     wait(20, msec); // Sleep the task for a short amount of time to
                     // prevent wasted resources.
   }

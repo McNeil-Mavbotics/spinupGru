@@ -10,7 +10,7 @@ extern motor frontRight;
 extern motor backLeft;
 extern motor backRight;
 extern motor indexer;
-extern motor flyWheel;
+extern motor_group flyWheels;
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.
