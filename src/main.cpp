@@ -1,3 +1,15 @@
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// Robot Configuration:
+// [Name]               [Type]        [Port(s)]
+// Controller1          controller                    
+// intake               motor         10              
+// frontLeft            motor         12              
+// frontRight           motor         19              
+// backLeft             motor         11              
+// backRight            motor         5               
+// indexer              motor         6               
+// flyWheels            motor_group   16, 17          
+// ---- END VEXCODE CONFIGURED DEVICES ----
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /*    Module:       main.cpp                                                  */
@@ -48,12 +60,13 @@ void pre_auton(void) {
   // All activities that occur before the competition starts
   // Example: clearing encoders, setting servo positions, ...
   indexer.setVelocity(100, percent);
-  indexer.spinFor(130, degrees, true);
+  indexer.spinFor(100, degrees, true);
   frontLeft.setStopping(hold);
   frontRight.setStopping(hold);
   backLeft.setStopping(hold);
   backRight.setStopping(hold);
   flyWheels.setStopping(coast);
+  intake.setVelocity(100, percent);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -89,12 +102,14 @@ void shoot() {
   // started = true;
   for (int i = 0; i < 3; i ++) {
     // started = false;
-    for (int j = 0; j < 5 && flyWheels.velocity(rpm) <= 120; j++) {
+    for (int j = 0; j < 5 && (flyWheels.velocity(rpm) <= 120 || flyWheels.velocity(rpm) > 130); j++) {
       vex::task::sleep(1000);
     }
-    indexer.spinFor(forward, 200, degrees);
+    Controller1.Screen.print("Launch");
+    Controller1.Screen.print(i);
+    indexer.spinFor(forward, 280, degrees);
     vex::task::sleep(200);
-    indexer.spinFor(forward, 160, degrees);
+    indexer.spinFor(forward, 100, degrees);
     // started = true;
     // int seconds = 0;
     // while (true) {
@@ -133,8 +148,8 @@ void usercontrol(void) {
     // Insert user code here. This is where you use the joystick values to
     // update your motors, etc.
     // ........................................................................
-    double LDriveSpeed = driveSpeedMultiplier * (Controller1.Axis2.value() + Controller1.Axis4.value()) * switched;
-    double RDriveSpeed = driveSpeedMultiplier * (Controller1.Axis2.value() - Controller1.Axis4.value()) * switched;
+    double LDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() + Controller1.Axis1.value()) * switched;
+    double RDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() - Controller1.Axis1.value()) * switched;
     frontLeft.spin(forward, LDriveSpeed / 2, vex::velocityUnits::pct);
     backLeft.spin(forward, LDriveSpeed / 2, vex::velocityUnits::pct);
     frontRight.spin(forward, RDriveSpeed / 2, vex::velocityUnits::pct);
@@ -146,6 +161,13 @@ void usercontrol(void) {
     } else {
       intake.stop();
     }
+
+    if (Controller1.ButtonR2.pressing() && Controller1.ButtonX.pressing()) {
+      indexer.spinFor(forward, 10, degrees);
+    } else if (Controller1.ButtonL2.pressing() && Controller1.ButtonX.pressing()) {
+      indexer.spinFor(reverse, 10, degrees);
+    }
+
     flyWheelController.changeValues(flyWheels.velocity(rpm));
     flyWheelController.changeValues(flyWheels.velocity(rpm));
     double velocityOut = flyWheelController.computePID(flyWheels.velocity(rpm)) * 0.02;
