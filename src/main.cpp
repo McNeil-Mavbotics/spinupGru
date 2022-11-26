@@ -1,15 +1,3 @@
-// ---- START VEXCODE CONFIGURED DEVICES ----
-// Robot Configuration:
-// [Name]               [Type]        [Port(s)]
-// Controller1          controller                    
-// intake               motor         10              
-// frontLeft            motor         12              
-// frontRight           motor         19              
-// backLeft             motor         11              
-// backRight            motor         5               
-// indexer              motor         6               
-// flyWheels            motor_group   16, 17          
-// ---- END VEXCODE CONFIGURED DEVICES ----
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /*    Module:       main.cpp                                                  */
@@ -23,7 +11,7 @@
 // Robot Configuration:
 // [Name]               [Type]        [Port(s)]
 // Controller1          controller                    
-// intake               motor         20              
+// intake               motor         10              
 // frontLeft            motor         12              
 // frontRight           motor         19              
 // backLeft             motor         11              
