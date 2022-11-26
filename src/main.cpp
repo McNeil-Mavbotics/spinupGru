@@ -15,7 +15,7 @@
 // frontLeft            motor         12              
 // frontRight           motor         19              
 // backLeft             motor         11              
-// backRight            motor         5               
+// backRight            motor         20              
 // indexer              motor         6               
 // flyWheels            motor_group   16, 17          
 // ---- END VEXCODE CONFIGURED DEVICES ----
@@ -93,8 +93,8 @@ void shoot() {
     for (int j = 0; j < 5 && (flyWheels.velocity(rpm) <= 120 || flyWheels.velocity(rpm) > 130); j++) {
       vex::task::sleep(1000);
     }
-    Controller1.Screen.print("Launch");
-    Controller1.Screen.print(i);
+    // Controller1.Screen.print("Launch");
+    // Controller1.Screen.print(i);
     indexer.spinFor(forward, 280, degrees);
     vex::task::sleep(200);
     indexer.spinFor(forward, 100, degrees);
@@ -164,7 +164,7 @@ void usercontrol(void) {
       flyWheelVelocity = 200;
     }
     flyWheels.setVelocity(flyWheelVelocity, rpm);
-    vex::brain::lcd screen = vex::brain::lcd();
+    // vex::brain::lcd screen = vex::brain::lcd();
     // if (flyWheels.velocity(rpm) > max && started) {
     //   max = flyWheels.velocity(rpm);
     // } else if (flyWheels.velocity(rpm) < min && started) {
