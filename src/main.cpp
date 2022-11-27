@@ -27,11 +27,10 @@ using namespace vex;
 
 // A global instance of competition
 competition Competition;
+// define your global instances of motors and other devices here
 // bool started = false;
 PIDController flyWheelController = PIDController();
 int switched = 1;
-// define your global instances of motors and other devices here
-
 /*---------------------------------------------------------------------------*/
 /*                          Pre-Autonomous Functions                         */
 /*                                                                           */
@@ -86,15 +85,39 @@ void autonomous(void) {
 void shoot() {
   flyWheelController.changeTarget(130);
   flyWheels.spin(forward);
+  indexer.setVelocity(100, percent);
+  vex::task::sleep(500);
+  while (!Controller1.ButtonX.pressing()) {
+    if (flyWheels.velocity(rpm) >= 125 && flyWheels.velocity(rpm) <= 130) {
+      Controller1.rumble(".");
+    }
+    if (Controller1.ButtonA.pressing()) {
+      indexer.spinFor(forward, 280, degrees);
+      vex::task::sleep(200);
+      indexer.spinFor(forward, 100, degrees);
+    }
+  }
+  flyWheels.stop();
+  flyWheelController.changeTarget(0);
+}
+
+void rapidFire() {
+  flyWheelController.changeTarget(130);
+  flyWheels.spin(forward);
+  indexer.setVelocity(100, percent);
   // vex::task::sleep(4000);
   // started = true;
   for (int i = 0; i < 3; i ++) {
     // started = false;
-    for (int j = 0; j < 5 && (flyWheels.velocity(rpm) <= 120 || flyWheels.velocity(rpm) > 130); j++) {
+    for (int j = 0; j < 5 && (flyWheels.velocity(rpm) <= 125 || flyWheels.velocity(rpm) >= 130); j++) {
       vex::task::sleep(1000);
+      if (flyWheels.velocity(percent) == 0)
+        break;
     }
     // Controller1.Screen.print("Launch");
     // Controller1.Screen.print(i);
+    if (flyWheels.velocity(percent) == 0)
+      break;
     indexer.spinFor(forward, 280, degrees);
     vex::task::sleep(200);
     indexer.spinFor(forward, 100, degrees);
@@ -117,11 +140,36 @@ void switchSides() {
   switched *= -1;
 }
 
+void intakeForward() {
+  if (intake.velocity(percent) > 0) {
+    intake.stop();
+  } else {
+    intake.spin(forward);
+  }
+}
+
+void intakeBackward() {
+  Controller1.Screen.setCursor(0, 0);
+  if (intake.velocity(percent) < 0) {
+    intake.stop();
+  } else {
+    intake.spin(reverse);
+  }
+}
+
 void usercontrol(void) {
   // User control code here, inside the loop
   double driveSpeedMultiplier = 1;
-  Controller1.ButtonA.pressed(shoot);
+  Controller1.ButtonY.pressed(rapidFire);
   Controller1.ButtonB.pressed(switchSides);
+  Controller1.ButtonX.pressed(shoot);
+  Controller1.ButtonUp.pressed(intakeForward);
+  Controller1.ButtonDown.pressed(intakeBackward);
+  Controller1.ButtonLeft.pressed([]() {
+    flyWheels.stop();
+    indexer.setVelocity(0, percent);
+  });
+
   flyWheelController.setUp(1.3, 0, 200);
   double flyWheelVelocity = 0;
   // double max = 0;
@@ -136,19 +184,12 @@ void usercontrol(void) {
     // Insert user code here. This is where you use the joystick values to
     // update your motors, etc.
     // ........................................................................
-    double LDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() + Controller1.Axis1.value()) * switched;
-    double RDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() - Controller1.Axis1.value()) * switched;
+    double LDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() * switched + Controller1.Axis1.value());
+    double RDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() * switched - Controller1.Axis1.value());
     frontLeft.spin(forward, LDriveSpeed / 2, vex::velocityUnits::pct);
     backLeft.spin(forward, LDriveSpeed / 2, vex::velocityUnits::pct);
     frontRight.spin(forward, RDriveSpeed / 2, vex::velocityUnits::pct);
     backRight.spin(forward, RDriveSpeed / 2, vex::velocityUnits::pct);
-    if (Controller1.ButtonR1.pressing()) {
-      intake.spin(forward);
-    } else if (Controller1.ButtonL1.pressing()) {
-      intake.spin(reverse);
-    } else {
-      intake.stop();
-    }
 
     if (Controller1.ButtonR2.pressing() && Controller1.ButtonX.pressing()) {
       indexer.spinFor(forward, 10, degrees);
