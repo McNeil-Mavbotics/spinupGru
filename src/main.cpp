@@ -31,6 +31,8 @@ competition Competition;
 // bool started = false;
 // PIDController flyWheelController = PIDController();
 int switched = 1;
+bool shooting = false;
+int flyWheelVelocity = 130;
 /*---------------------------------------------------------------------------*/
 /*                          Pre-Autonomous Functions                         */
 /*                                                                           */
@@ -85,7 +87,7 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void index() {
-  while (!(flyWheels.velocity(rpm) >= 125 && flyWheels.velocity(rpm) <= 132))
+  while (!(flyWheels.velocity(rpm) >= (flyWheelVelocity - 5) && flyWheels.velocity(rpm) <= (flyWheelVelocity + 5))) // numbers should be changed
     vex::task::sleep(20);
   indexer.spinFor(forward, 280, degrees);
   vex::task::sleep(200);
@@ -93,13 +95,14 @@ void index() {
 }
 
 void shoot() {
+  shooting = true;
   // flyWheelController.changeTarget(130);
-  flyWheels.setVelocity(130, rpm);
+  flyWheels.setVelocity(flyWheelVelocity, rpm);
   flyWheels.spin(forward);
   indexer.setVelocity(100, percent);
-  vex::task::sleep(500);
-  while (flyWheels.velocity(rpm) != 0) {
-    if (flyWheels.velocity(rpm) >= 125 && flyWheels.velocity(rpm) <= 132) {
+  // vex::task::sleep(500);
+  while (shooting) {
+    if (flyWheels.velocity(rpm) >= flyWheelVelocity - 5 && flyWheels.velocity(rpm) <= flyWheelVelocity + 5) {
       Controller1.rumble(".");
     }
     if (Controller1.ButtonR2.pressing())
@@ -111,7 +114,8 @@ void shoot() {
 
 void rapidFire() {
   // flyWheelController.changeTarget(130);
-  flyWheels.setVelocity(130, rpm);
+  shooting = true;
+  flyWheels.setVelocity(flyWheelVelocity, rpm);
   flyWheels.spin(forward);
   indexer.setVelocity(100, percent);
   // vex::task::sleep(4000);
@@ -123,12 +127,12 @@ void rapidFire() {
       double sped = flyWheels.velocity(rpm);
       Controller1.Screen.setCursor(0, 0);
       Controller1.Screen.print(sped);
-      if (sped >= 128 && sped <= 135) {
+      if (sped >= (flyWheelVelocity - 5) && sped <= (flyWheelVelocity + 5)) {
         k++;
       } else {
         k = 0;
       }
-      if (flyWheels.velocity(rpm) == 0 || j == 6) {
+      if (!shooting || j == 6) {
         Controller1.Screen.newLine();
         Controller1.Screen.print(j);
         Controller1.Screen.print(k);
@@ -141,7 +145,7 @@ void rapidFire() {
     Controller1.Screen.print(flyWheels.velocity(rpm));
     // Controller1.Screen.print("Launch");
     // Controller1.Screen.print(i);
-    if (flyWheels.velocity(rpm) == 0)
+    if (!shooting)
       break;
     index();
     // started = true;
@@ -193,6 +197,7 @@ void usercontrol(void) {
   Controller1.ButtonLeft.pressed([]() {
     flyWheels.stop();
     indexer.setVelocity(0, percent);
+    shooting = false;
   });
 
   // flyWheelController.setUp(1, 0, 600);
