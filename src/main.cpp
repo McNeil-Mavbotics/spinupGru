@@ -51,7 +51,7 @@ void pre_auton(void) {
   indexer.setVelocity(100, percent);
   indexer.setStopping(coast);
   vex::task::sleep(1000);
-  indexer.spinFor(100, degrees, true);
+  indexer.spinFor(360, degrees, true);
   frontLeft.setStopping(hold);
   frontRight.setStopping(hold);
   backLeft.setStopping(hold);
@@ -192,6 +192,9 @@ void usercontrol(void) {
   Controller1.ButtonY.pressed(rapidFire);
   Controller1.ButtonB.pressed(switchSides);
   Controller1.ButtonX.pressed(shoot);
+  Controller1.ButtonL2.pressed([]() {
+    indexer.spinFor(10, degrees);
+  });
   // Controller1.ButtonUp.pressed(intakeForward);
   // Controller1.ButtonDown.pressed(intakeBackward);
   Controller1.ButtonLeft.pressed([]() {
@@ -221,11 +224,11 @@ void usercontrol(void) {
     frontRight.spin(forward, RDriveSpeed / 2, vex::velocityUnits::pct);
     backRight.spin(forward, RDriveSpeed / 2, vex::velocityUnits::pct);
 
-    if (Controller1.ButtonR2.pressing() && Controller1.ButtonX.pressing()) {
-      indexer.spinFor(forward, 10, degrees);
-    } else if (Controller1.ButtonL2.pressing() && Controller1.ButtonX.pressing()) {
-      indexer.spinFor(reverse, 10, degrees);
-    }
+    // if (Controller1.ButtonR2.pressing() && Controller1.ButtonX.pressing()) {
+    //   indexer.spinFor(forward, 10, degrees);
+    // } else if (Controller1.ButtonL2.pressing() && Controller1.ButtonX.pressing()) {
+    //   indexer.spinFor(reverse, 10, degrees);
+    // }
 
     // flyWheelController.changeValues(flyWheels.velocity(rpm));
     // flyWheelController.changeValues(flyWheels.velocity(rpm));
