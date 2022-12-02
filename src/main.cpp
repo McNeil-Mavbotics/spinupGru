@@ -17,7 +17,7 @@
 // backLeft             motor         11              
 // backRight            motor         20              
 // indexer              motor         6               
-// flyWheels            motor_group   16, 17          
+// flyWheel             motor         17              
 // ---- END VEXCODE CONFIGURED DEVICES ----
 
 #include "vex.h"
@@ -33,6 +33,7 @@ competition Competition;
 int switched = 1;
 bool shooting = false;
 int flyWheelVelocity = 130;
+int indexerLen = 170;
 /*---------------------------------------------------------------------------*/
 /*                          Pre-Autonomous Functions                         */
 /*                                                                           */
@@ -48,15 +49,11 @@ void pre_auton(void) {
   vexcodeInit();
   // All activities that occur before the competition starts
   // Example: clearing encoders, setting servo positions, ...
-  indexer.setVelocity(100, percent);
-  indexer.setStopping(coast);
-  vex::task::sleep(1000);
-  indexer.spinFor(360, degrees, true);
   frontLeft.setStopping(hold);
   frontRight.setStopping(hold);
   backLeft.setStopping(hold);
   backRight.setStopping(hold);
-  flyWheels.setStopping(coast);
+  flyWheel.setStopping(coast);
   intake.setVelocity(100, percent);
 }
 
@@ -70,10 +67,19 @@ void pre_auton(void) {
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
 
+void setIndexer(void) {
+  indexer.setPosition(0, degrees);
+  indexer.setStopping(coast);
+  vex::task::sleep(1000);
+  indexer.spinFor(indexerLen, degrees, true);
+  indexer.setStopping(hold);
+}
+
 void autonomous(void) {
   // ..........................................................................
   // Insert autonomous user code here.
   // ..........................................................................
+  setIndexer();
 }
 
 /*---------------------------------------------------------------------------*/
@@ -86,37 +92,36 @@ void autonomous(void) {
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
 
-void index() {
-  while (!(flyWheels.velocity(rpm) >= (flyWheelVelocity - 5) && flyWheels.velocity(rpm) <= (flyWheelVelocity + 5))) // numbers should be changed
+void index(void) {
+  while (!(flyWheel.velocity(rpm) >= (flyWheelVelocity - 5) && flyWheel.velocity(rpm) <= (flyWheelVelocity + 5))) // numbers should be changed
     vex::task::sleep(20);
-  indexer.spinFor(forward, 280, degrees);
+  indexer.spinFor(forward, 50, degrees, true);
   vex::task::sleep(200);
-  indexer.spinFor(forward, 100, degrees);
+  indexer.spinFor(forward, 360 - (50), degrees);
 }
 
-void shoot() {
+void shoot(void) {
   shooting = true;
   // flyWheelController.changeTarget(130);
-  flyWheels.setVelocity(flyWheelVelocity, rpm);
-  flyWheels.spin(forward);
-  indexer.setVelocity(100, percent);
+  flyWheel.setVelocity(130, rpm);
+  flyWheel.spin(forward);
   // vex::task::sleep(500);
   while (shooting) {
-    if (flyWheels.velocity(rpm) >= flyWheelVelocity - 5 && flyWheels.velocity(rpm) <= flyWheelVelocity + 5) {
+    if (flyWheel.velocity(rpm) >= flyWheelVelocity - 5 && flyWheel.velocity(rpm) <= flyWheelVelocity + 5) {
       Controller1.rumble(".");
     }
     if (Controller1.ButtonR2.pressing())
       index();
   }
-  flyWheels.stop();
+  flyWheel.stop();
   // flyWheelController.changeTarget(0);
 }
 
-void rapidFire() {
+void rapidFire(void) {
   // flyWheelController.changeTarget(130);
   shooting = true;
-  flyWheels.setVelocity(flyWheelVelocity, rpm);
-  flyWheels.spin(forward);
+  flyWheel.setVelocity(flyWheelVelocity, rpm);
+  flyWheel.spin(forward);
   indexer.setVelocity(100, percent);
   // vex::task::sleep(4000);
   // started = true;
@@ -124,7 +129,7 @@ void rapidFire() {
     // started = false;
     for (int j = 0, k = 0; k < 3; j++) {
       vex::task::sleep(1000);
-      double sped = flyWheels.velocity(rpm);
+      double sped = flyWheel.velocity(rpm);
       Controller1.Screen.setCursor(0, 0);
       Controller1.Screen.print(sped);
       if (sped >= (flyWheelVelocity - 5) && sped <= (flyWheelVelocity + 5)) {
@@ -132,17 +137,17 @@ void rapidFire() {
       } else {
         k = 0;
       }
-      if (!shooting || j == 6) {
+      if (!shooting) {
         Controller1.Screen.newLine();
         Controller1.Screen.print(j);
         Controller1.Screen.print(k);
-        flyWheels.stop();
+        flyWheel.stop();
         // flyWheelController.changeTarget(0);
         return;
       }
     }
     Controller1.Screen.setCursor(0, 0);
-    Controller1.Screen.print(flyWheels.velocity(rpm));
+    Controller1.Screen.print(flyWheel.velocity(rpm));
     // Controller1.Screen.print("Launch");
     // Controller1.Screen.print(i);
     if (!shooting)
@@ -153,19 +158,19 @@ void rapidFire() {
     // while (true) {
     //   seconds += 1;
     //   vex::task::sleep(100);
-    //   if (flyWheels.velocity(rpm) >= 120 || seconds >= 50) {
+    //   if (flyWheel.velocity(rpm) >= 120 || seconds >= 50) {
     //     break;
     //   }
     // }
   }
   // started = false;
-  flyWheels.stop();
+  flyWheel.stop();
   // flyWheelController.changeTarget(0);
 }
 
-void switchSides() {
-  switched *= -1;
-}
+// void switchSides(void) {
+//   switched *= -1;
+// }
 
 // void intakeForward() {
 //   if (intake.velocity(percent) > 0) {
@@ -185,20 +190,42 @@ void switchSides() {
 // }
 
 void usercontrol(void) {
+  setIndexer();
   // if (driver != urjith)
   //   die();
   // User control code here, inside the loop
   double driveSpeedMultiplier = 1;
   Controller1.ButtonY.pressed(rapidFire);
-  Controller1.ButtonB.pressed(switchSides);
+  Controller1.ButtonB.pressed([]() {
+    switched *= -1;
+  });
   Controller1.ButtonX.pressed(shoot);
-  Controller1.ButtonL2.pressed([]() {
-    indexer.spinFor(10, degrees);
+  Controller1.ButtonRight.pressed([]() {
+    if (Controller1.ButtonRight.pressing()) {
+      indexer.spinFor(-indexerLen, degrees, true);
+      return;
+    }
+  });
+  Controller1.ButtonUp.pressed([]() {
+    if (Controller1.ButtonL2.pressing()) {
+      indexer.spinFor(10, degrees, true);
+    }
+    Controller1.Screen.setCursor(0, 0);
+    Controller1.Screen.print(indexer.position(degrees));
+    Controller1.Screen.print(" degrees");
+  });
+  Controller1.ButtonDown.pressed([]() {
+    if (Controller1.ButtonL2.pressing()) {
+      indexer.spinFor(-10, degrees, true);
+    }
+    Controller1.Screen.setCursor(0, 0);
+    Controller1.Screen.print(indexer.position(degrees));
+    Controller1.Screen.print(" degrees");
   });
   // Controller1.ButtonUp.pressed(intakeForward);
   // Controller1.ButtonDown.pressed(intakeBackward);
   Controller1.ButtonLeft.pressed([]() {
-    flyWheels.stop();
+    flyWheel.stop();
     indexer.setVelocity(0, percent);
     shooting = false;
   });
@@ -230,30 +257,30 @@ void usercontrol(void) {
     //   indexer.spinFor(reverse, 10, degrees);
     // }
 
-    // flyWheelController.changeValues(flyWheels.velocity(rpm));
-    // flyWheelController.changeValues(flyWheels.velocity(rpm));
-    // double velocityOut = flyWheelController.computePID(flyWheels.velocity(rpm)) * 0.02;
+    // flyWheelController.changeValues(flyWheel.velocity(rpm));
+    // flyWheelController.changeValues(flyWheel.velocity(rpm));
+    // double velocityOut = flyWheelController.computePID(flyWheel.velocity(rpm)) * 0.02;
     // flyWheelVelocity += velocityOut;
     // if (flyWheelVelocity > 200) {
       // flyWheelVelocity = 200;
     // }
-    // flyWheels.setVelocity(130, rpm);
+    // flyWheel.setVelocity(130, rpm);
     // vex::brain::lcd screen = vex::brain::lcd();
-    // if (flyWheels.velocity(rpm) > max && started) {
-    //   max = flyWheels.velocity(rpm);
-    // } else if (flyWheels.velocity(rpm) < min && started) {
-    //   min = flyWheels.velocity(rpm);
+    // if (flyWheel.velocity(rpm) > max && started) {
+    //   max = flyWheel.velocity(rpm);
+    // } else if (flyWheel.velocity(rpm) < min && started) {
+    //   min = flyWheel.velocity(rpm);
     // }
-    // screen.print(flyWheels.velocity(rpm));
+    // screen.print(flyWheel.velocity(rpm));
     // screen.print("\n");
     // screen.print(max);
     // screen.print("\n");
     // screen.print(min);
     // screen.print("\n");
     // screen.print(flyWheelVelocity);
-    if (Controller1.ButtonL1.pressing())
+    if (Controller1.ButtonR1.pressing())
       intake.spin(forward);
-    else if(Controller1.ButtonR1.pressing())
+    else if(Controller1.ButtonL1.pressing())
       intake.spin(reverse);
     else
       intake.stop();
