@@ -256,14 +256,13 @@ void usercontrol(void) {
     // Insert user code here. This is where you use the joystick values to
     // update your motors, etc.
     // ........................................................................
-    double LDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() * switched + Controller1.Axis1.value());
-    double RDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() * switched - Controller1.Axis1.value());
+    double LDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() * switched + Controller1.Axis1.value() * 2);
+    double RDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() * switched - Controller1.Axis1.value() * 2);
     frontLeft.spin(forward, LDriveSpeed / 2, vex::velocityUnits::pct);
     backLeft.spin(forward, LDriveSpeed / 2, vex::velocityUnits::pct);
     frontRight.spin(forward, RDriveSpeed / 2, vex::velocityUnits::pct);
     backRight.spin(forward, RDriveSpeed / 2, vex::velocityUnits::pct);
     flyWheel.setVelocity(flyWheelVelocity, rpm);
-
     // if (Controller1.ButtonR2.pressing() && Controller1.ButtonX.pressing()) {
     //   indexer.spinFor(forward, 10, degrees);
     // } else if (Controller1.ButtonL2.pressing() && Controller1.ButtonX.pressing()) {
@@ -302,15 +301,8 @@ void usercontrol(void) {
         flyWheelVelocity = (Controller1.Axis2.position(percent) + 100) * 1.3;
       } else if (Controller1.Axis2.position(percent) > 0) {
         flyWheelVelocity = Controller1.Axis2.position(percent) * 0.7 + 130;
+      }
     }
-    Controller1.Screen.clearScreen();
-    Controller1.Screen.setCursor(0, 0);
-    Controller1.Screen.print(flyWheelVelocity);
-    Controller1.Screen.print(" rpm");
-    Controller1.Screen.newLine();
-    Controller1.Screen.print(indexer.position(degrees));
-    Controller1.Screen.print(" degrees");
-    };
     Controller1.Screen.setCursor(0, 0);
     Controller1.Screen.print(flyWheelVelocity);
     Controller1.Screen.print(" rpm");
