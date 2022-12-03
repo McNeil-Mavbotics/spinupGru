@@ -28,8 +28,6 @@ using namespace vex;
 // A global instance of competition
 competition Competition;
 // define your global instances of motors and other devices here
-// bool started = false;
-// PIDController flyWheelController = PIDController();
 int switched = 1;
 bool shooting = false;
 int flyWheelVelocity = 130;
@@ -103,7 +101,7 @@ void index(void) {
     indexer.spinFor(forward, 50, degrees, true);
     wait(200, msec);
     indexer.spinFor(forward, 310, degrees);
-    indexer.setPosition(170, degrees);
+    indexer.setPosition(indexer.position(degrees) - 360, degrees);
   }
 }
 
@@ -151,6 +149,7 @@ void usercontrol(void) {
   });
 
   while (1) {
+    // Drive Train Controls
     double LDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() * switched + Controller1.Axis1.value() * 2);
     double RDriveSpeed = driveSpeedMultiplier * (Controller1.Axis3.value() * switched - Controller1.Axis1.value() * 2);
     frontLeft.spin(forward, LDriveSpeed / 2, vex::velocityUnits::pct);
@@ -166,7 +165,7 @@ void usercontrol(void) {
       } else if (Controller1.ButtonDown.pressing()) {
         indexer.spinFor(-10, degrees, true);
       } else if (Controller1.ButtonRight.pressing()) {
-        indexer.spinFor(-1 * indexerLen, degrees, true);
+        indexer.spinToPosition(0, degrees, true);
       } else if (Controller1.Axis2.position(percent) <= 0) {
         flyWheelVelocity = (Controller1.Axis2.position(percent) + 100) * 1.3;
       } else if (Controller1.Axis2.position(percent) > 0) {
@@ -174,6 +173,7 @@ void usercontrol(void) {
       }
     }
     
+    // Intake Controls
     if (Controller1.ButtonR1.pressing())
       intake.spin(forward);
     else if(Controller1.ButtonL1.pressing())
