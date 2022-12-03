@@ -98,6 +98,7 @@ void index(void) {
   indexer.spinFor(forward, 50, degrees, true);
   vex::task::sleep(200);
   indexer.spinFor(forward, 360 - (50), degrees);
+  indexer.setPosition(170, degrees);
 }
 
 void shoot(void) {
