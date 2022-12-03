@@ -93,7 +93,7 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void index(void) {
-  while (!(flyWheel.velocity(rpm) >= (flyWheelVelocity - 5) && flyWheel.velocity(rpm) <= (flyWheelVelocity + 5))) // numbers should be changed
+  while (flyWheel.velocity(rpm) <= (flyWheelVelocity - 5) || flyWheel.velocity(rpm) >= (flyWheelVelocity + 5)) // numbers should be changed
     vex::task::sleep(20);
   indexer.spinFor(forward, 50, degrees, true);
   vex::task::sleep(200);
@@ -103,15 +103,14 @@ void index(void) {
 void shoot(void) {
   shooting = true;
   // flyWheelController.changeTarget(130);
-  flyWheel.setVelocity(130, rpm);
   flyWheel.spin(forward);
   // vex::task::sleep(500);
   while (shooting) {
-    if (flyWheel.velocity(rpm) >= flyWheelVelocity - 5 && flyWheel.velocity(rpm) <= flyWheelVelocity + 5) {
+    if (flyWheel.velocity(rpm) >= flyWheelVelocity - 5 && flyWheel.velocity(rpm) <= flyWheelVelocity + 5)
       Controller1.rumble(".");
-    }
     if (Controller1.ButtonR2.pressing())
       index();
+    vex::task::sleep(20);
   }
   flyWheel.stop();
   // flyWheelController.changeTarget(0);
@@ -120,7 +119,6 @@ void shoot(void) {
 void rapidFire(void) {
   // flyWheelController.changeTarget(130);
   shooting = true;
-  flyWheel.setVelocity(flyWheelVelocity, rpm);
   flyWheel.spin(forward);
   indexer.setVelocity(100, percent);
   // vex::task::sleep(4000);
@@ -200,28 +198,41 @@ void usercontrol(void) {
     switched *= -1;
   });
   Controller1.ButtonX.pressed(shoot);
-  Controller1.ButtonRight.pressed([]() {
-    if (Controller1.ButtonRight.pressing()) {
-      indexer.spinFor(-indexerLen, degrees, true);
-      return;
-    }
-  });
-  Controller1.ButtonUp.pressed([]() {
-    if (Controller1.ButtonL2.pressing()) {
-      indexer.spinFor(10, degrees, true);
-    }
-    Controller1.Screen.setCursor(0, 0);
-    Controller1.Screen.print(indexer.position(degrees));
-    Controller1.Screen.print(" degrees");
-  });
-  Controller1.ButtonDown.pressed([]() {
-    if (Controller1.ButtonL2.pressing()) {
-      indexer.spinFor(-10, degrees, true);
-    }
-    Controller1.Screen.setCursor(0, 0);
-    Controller1.Screen.print(indexer.position(degrees));
-    Controller1.Screen.print(" degrees");
-  });
+  // Controller1.ButtonL2.pressed([]() {
+  //   if (Controller1.ButtonUp.pressing()) {
+  //     indexer.spinFor(10, degrees, true);
+  //   } else if (Controller1.ButtonDown.pressing()) {
+  //     indexer.spinFor(-10, degrees, true);
+  //   } else if (Controller1.ButtonRight.pressing()) {
+  //     indexer.spinFor(-1 * indexerLen, degrees, true);
+  //   } else if (Controller1.Axis2.position(percent) <= 0) {
+  //     flyWheelVelocity = (Controller1.Axis2.position(percent) + 100) * 1.3;
+  //   } else if (Controller1.Axis2.position(percent) > 0) {
+  //     flyWheelVelocity = Controller1.Axis2.position(percent) * 0.7 + 130;
+  //   }
+  //   Controller1.Screen.setCursor(0, 0);
+  //   Controller1.Screen.print(flyWheelVelocity);
+  //   Controller1.Screen.print(" rpm");
+  //   Controller1.Screen.newLine();
+  //   Controller1.Screen.print(indexer.position(degrees));
+  //   Controller1.Screen.print(" degrees");
+  // });
+  // Controller1.ButtonUp.pressed([]() {
+  //   if (Controller1.ButtonL2.pressing()) {
+  //     indexer.spinFor(10, degrees, true);
+  //   }
+  //   Controller1.Screen.setCursor(0, 0);
+  //   Controller1.Screen.print(indexer.position(degrees));
+  //   Controller1.Screen.print(" degrees");
+  // // });
+  // Controller1.ButtonDown.pressed([]() {
+  //   if (Controller1.ButtonL2.pressing()) {
+  //     indexer.spinFor(-10, degrees, true);
+  //   }
+  //   Controller1.Screen.setCursor(0, 0);
+  //   Controller1.Screen.print(indexer.position(degrees));
+  //   Controller1.Screen.print(" degrees");
+  // });
   // Controller1.ButtonUp.pressed(intakeForward);
   // Controller1.ButtonDown.pressed(intakeBackward);
   Controller1.ButtonLeft.pressed([]() {
@@ -250,6 +261,7 @@ void usercontrol(void) {
     backLeft.spin(forward, LDriveSpeed / 2, vex::velocityUnits::pct);
     frontRight.spin(forward, RDriveSpeed / 2, vex::velocityUnits::pct);
     backRight.spin(forward, RDriveSpeed / 2, vex::velocityUnits::pct);
+    flyWheel.setVelocity(flyWheelVelocity, rpm);
 
     // if (Controller1.ButtonR2.pressing() && Controller1.ButtonX.pressing()) {
     //   indexer.spinFor(forward, 10, degrees);
@@ -262,7 +274,7 @@ void usercontrol(void) {
     // double velocityOut = flyWheelController.computePID(flyWheel.velocity(rpm)) * 0.02;
     // flyWheelVelocity += velocityOut;
     // if (flyWheelVelocity > 200) {
-      // flyWheelVelocity = 200;
+    //   flyWheelVelocity = 200;
     // }
     // flyWheel.setVelocity(130, rpm);
     // vex::brain::lcd screen = vex::brain::lcd();
@@ -278,6 +290,32 @@ void usercontrol(void) {
     // screen.print(min);
     // screen.print("\n");
     // screen.print(flyWheelVelocity);
+    if (Controller1.ButtonL2.pressing()) {
+      if (Controller1.ButtonUp.pressing()) {
+        indexer.spinFor(10, degrees, true);
+      } else if (Controller1.ButtonDown.pressing()) {
+        indexer.spinFor(-10, degrees, true);
+      } else if (Controller1.ButtonRight.pressing()) {
+        indexer.spinFor(-1 * indexerLen, degrees, true);
+      } else if (Controller1.Axis2.position(percent) <= 0) {
+        flyWheelVelocity = (Controller1.Axis2.position(percent) + 100) * 1.3;
+      } else if (Controller1.Axis2.position(percent) > 0) {
+        flyWheelVelocity = Controller1.Axis2.position(percent) * 0.7 + 130;
+    }
+    Controller1.Screen.clearScreen();
+    Controller1.Screen.setCursor(0, 0);
+    Controller1.Screen.print(flyWheelVelocity);
+    Controller1.Screen.print(" rpm");
+    Controller1.Screen.newLine();
+    Controller1.Screen.print(indexer.position(degrees));
+    Controller1.Screen.print(" degrees");
+    };
+    Controller1.Screen.setCursor(0, 0);
+    Controller1.Screen.print(flyWheelVelocity);
+    Controller1.Screen.print(" rpm");
+    Controller1.Screen.newLine();
+    Controller1.Screen.print(indexer.position(degrees));
+    Controller1.Screen.print(" degrees");
     if (Controller1.ButtonR1.pressing())
       intake.spin(forward);
     else if(Controller1.ButtonL1.pressing())
